@@ -1,0 +1,20 @@
+<project>
+
+	<taskdef resource="org/gridkit/lab/gridant/gridant.properties"/>
+
+	<target name="remote-twin-server">
+		<cluster>
+			<server id="server1" host="cbox1"/>
+			<server id="server2" host="cbox2"/>
+		</cluster>
+	</target>
+
+    <target name="grid-echo" depends="remote-twin-server">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <echo>This is slave ${slave.id}</echo>
+            <touch file="ping.txt"/>
+        </remotely>
+    </target>
+
+</project>

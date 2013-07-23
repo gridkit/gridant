@@ -97,13 +97,13 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.4</version>
                 <configuration>
-                	<preparationGoals>pre-clean</preparationGoals>
+                    <preparationGoals>pre-clean</preparationGoals>
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                     <pushChanges>true</pushChanges>
                 </configuration>
             </plugin>
             <plugin>
-            	<!-- This will keep version number used in examples synchronized -->
+                <!-- This will keep version number used in examples synchronized -->
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
                 <version>1.5.2</version>
@@ -111,10 +111,10 @@
                     <quiet>false</quiet>
                 </configuration>
                 <executions>
-                	<execution>
+                    <execution>
                         <id>default-clean</id>
                         <goals>
-                        	<goal>replace</goal>
+                            <goal>replace</goal>
                         </goals>
                         <phase>pre-clean</phase>
                         <configuration>
@@ -123,9 +123,9 @@
                             <value><![CDATA[<version>${project.version}</version><!--grid-ant-version-->]]></value>
                             <regex>true</regex>
                         </configuration>
-                	</execution>
+                    </execution>
                 </executions>
-			</plugin>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -177,39 +177,39 @@
         </plugins>
         
         <pluginManagement>
-        	<plugins>
-        		<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        		<plugin>
-        			<groupId>org.eclipse.m2e</groupId>
-        			<artifactId>lifecycle-mapping</artifactId>
-        			<version>1.0.0</version>
-        			<configuration>
-        				<lifecycleMappingMetadata>
-        					<pluginExecutions>
-        						<pluginExecution>
-        							<pluginExecutionFilter>
-        								<groupId>
-        									com.google.code.maven-replacer-plugin
-        								</groupId>
-        								<artifactId>
-        									replacer
-        								</artifactId>
-        								<versionRange>
-        									[1.5.2,)
-        								</versionRange>
-        								<goals>
-        									<goal>replace</goal>
-        								</goals>
-        							</pluginExecutionFilter>
-        							<action>
-        								<ignore/>
-        							</action>
-        						</pluginExecution>
-        					</pluginExecutions>
-        				</lifecycleMappingMetadata>
-        			</configuration>
-        		</plugin>
-        	</plugins>
+            <plugins>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            com.google.code.maven-replacer-plugin
+                                        </groupId>
+                                        <artifactId>
+                                            replacer
+                                        </artifactId>
+                                        <versionRange>
+                                            [1.5.2,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>replace</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
         </pluginManagement>
     </build>
 

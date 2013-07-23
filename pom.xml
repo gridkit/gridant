@@ -29,9 +29,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/aragozin/gridant.git</connection>
-        <developerConnection>scm:git:https://github.com/aragozin/gridant.git</developerConnection>
-        <url>https://github.com/aragozin/gridant</url>
+        <connection>scm:git:https://github.com/gridkit/gridant.git</connection>
+        <developerConnection>scm:git:https://github.com/gridkit/gridant.git</developerConnection>
+        <url>https://github.com/gridkit/gridant</url>
       <tag>grid-ant-0.1</tag>
   </scm>
 

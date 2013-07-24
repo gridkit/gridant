@@ -4,7 +4,11 @@
 
     <groupId>org.gridkit.lab</groupId>
     <artifactId>grid-ant-examples</artifactId>
+<<<<<<< HEAD
     <version>0.3-SNAPSHOT</version><!--grid-ant-version-->
+=======
+    <version>0.1</version>
+>>>>>>> Dependency version corrected in example pom
     <packaging>pom</packaging>
     <name>${project.groupId}::${project.artifactId}</name>
 

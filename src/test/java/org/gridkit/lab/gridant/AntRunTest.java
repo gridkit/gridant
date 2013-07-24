@@ -27,6 +27,24 @@ public class AntRunTest {
 		Assert.assertTrue(new File("target/base1/server1.txt").exists());
 		Assert.assertTrue(new File("target/base2/server2.txt").exists());
 	}
+	
+//	@Test
+//	public void run_touch2() throws MalformedURLException, LaunchException {
+//		deleteAll(new File("target/base1")); 
+//		deleteAll(new File("target/base2")); 
+//		runLocalTarget("grid-touch2");
+//		Assert.assertTrue(new File("target/base1/server1-2.txt").exists());
+//		Assert.assertTrue(new File("target/base2/server2-2.txt").exists());
+//	}
+
+	@Test
+	public void run_touch3() throws MalformedURLException, LaunchException {
+		deleteAll(new File("target/base1")); 
+		deleteAll(new File("target/base2")); 
+		runLocalTarget("grid-touch3");
+		Assert.assertTrue(new File("target/base1/server1-3.txt").exists());
+		Assert.assertTrue(new File("target/base2/server2-3.txt").exists());
+	}
 
 	@Test
 	public void run_remote_echo() throws MalformedURLException, LaunchException {

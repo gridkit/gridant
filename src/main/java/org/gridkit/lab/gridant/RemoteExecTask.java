@@ -9,6 +9,7 @@ import java.net.URL;
 import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -143,6 +144,13 @@ public class RemoteExecTask extends Task implements TaskContainer {
 			slave.executor = execHost;
 			slave.buildFile = buildFile.toURI().toString();
 			slave.logger = new RemoteBuildLogger(createRemoteLogger(id), getProject());
+			slave.props = new HashMap<String, String>();
+			for(String pname: getProject().getProperties().keySet()) {
+				Object vp = getProject().getProperty(pname);
+				if (vp instanceof String) {
+					slave.props.put(pname, (String) vp);
+				}
+			}
 			return slave;
 			
 		} catch(Exception e) {
@@ -164,6 +172,7 @@ public class RemoteExecTask extends Task implements TaskContainer {
 		BuildLogger logger;
 		MasterExecutor executor;
 		String buildFile;
+		Map<String, String> props;
 		
 		@Override
 		public Project getProject() {
@@ -177,6 +186,9 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				URLResource res = new URLResource(buildFileUrl);
 				
 				Project project = new Project();
+				for(String prop: props.keySet()) {
+					project.setProperty(prop, props.get(prop));
+				}
 				
 				ProjectHelper helper = ProjectHelperRepository.getInstance().getProjectHelperForBuildFile(res);
 				project.addReference(MagicNames.REFID_PROJECT_HELPER, helper);

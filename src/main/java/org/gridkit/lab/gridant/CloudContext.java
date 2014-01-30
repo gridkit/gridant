@@ -4,9 +4,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.tools.ant.Project;
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 
 public class CloudContext {
 
@@ -27,10 +27,10 @@ public class CloudContext {
 		return ctx;
 	}
 	
-	private ViNodeSet nodeset = CloudFactory.createCloud();
+	private Cloud nodeset = CloudFactory.createCloud();
 	private Set<String> specificNodes = new HashSet<String>();
 	
-	public ViNodeSet getNodeSet() {
+	public Cloud getNodeSet() {
 		return nodeset;
 	}
 	
@@ -43,7 +43,4 @@ public class CloudContext {
 		}
 		return nodeset.node(name);
 	}
-	
-	
-	
 }

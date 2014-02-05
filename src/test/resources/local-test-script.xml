@@ -35,6 +35,30 @@
         <remotely servers="server*">
             <touch file="${slave.id}.txt"/>
         </remotely>
-    </target>	
+    </target>
+
+	<target name="grid-touch2" depends="local-base1, local-base2">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <antcall target="remote-touch" inheritrefs="true"/>
+        </remotely>
+    </target>
+
+	<target name="grid-touch3" depends="local-base1, local-base2">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <remote-touch-macro/>
+        </remotely>
+    </target>
+	
+	<target name="remote-touch">
+	    <touch file="${slave.id}-2.txt"/>
+	</target>
+	
+	<macrodef name="remote-touch-macro">
+		<sequential>
+	        <touch file="${slave.id}-3.txt"/>
+	    </sequential>
+	</macrodef>
 	
 </project>

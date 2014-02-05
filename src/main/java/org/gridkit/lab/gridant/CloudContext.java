@@ -1,12 +1,14 @@
 package org.gridkit.lab.gridant;
 
+import static org.gridkit.nanocloud.RemoteNode.REMOTE;
+
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.tools.ant.Project;
+import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
-import org.gridkit.vicluster.ViNodeSet;
 
 public class CloudContext {
 
@@ -27,10 +29,14 @@ public class CloudContext {
 		return ctx;
 	}
 	
-	private ViNodeSet nodeset = CloudFactory.createCloud();
+	private Cloud nodeset = CloudFactory.createCloud();
 	private Set<String> specificNodes = new HashSet<String>();
 	
-	public ViNodeSet getNodeSet() {
+	protected Cloud createCloud() {
+		return CloudFactory.createCloud();
+	}
+	
+	public Cloud getNodeSet() {
 		return nodeset;
 	}
 	
@@ -41,9 +47,8 @@ public class CloudContext {
 		if (!specificNodes.add(name)) {
 			throw new IllegalStateException("Node '" + name + "' is already declared");
 		}
-		return nodeset.node(name);
+		ViNode node = nodeset.node(name);
+		node.x(REMOTE).useSimpleRemoting();
+		return node;
 	}
-	
-	
-	
 }

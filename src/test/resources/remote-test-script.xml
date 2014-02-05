@@ -6,10 +6,11 @@
 		<cluster>
 			<server id="server1" host="cbox1"/>
 			<server id="server2" host="cbox2"/>
+			<server id="fserver" host="fbox"/>
 		</cluster>
 	</target>
 
-    <target name="grid-echo" depends="remote-twin-server">
+    <target name="cbox-grid-echo" depends="remote-twin-server">
         <echo>This is master</echo>
         <remotely servers="server*">
             <echo>This is slave ${slave.id}</echo>
@@ -17,4 +18,12 @@
         </remotely>
     </target>
 
+    <target name="fbox-grid-echo" depends="remote-twin-server">
+        <echo>This is master</echo>
+        <remotely servers="fserver*">
+            <echo>This is slave ${slave.id}</echo>
+            <touch file="ping.txt"/>
+        </remotely>
+    </target>
+	
 </project>

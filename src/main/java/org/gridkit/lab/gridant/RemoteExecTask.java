@@ -1,9 +1,12 @@
 package org.gridkit.lab.gridant;
 
+import static org.gridkit.nanocloud.VX.CONSOLE;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.URL;
 import java.rmi.Remote;
@@ -36,6 +39,7 @@ import org.apache.tools.ant.UnknownElement;
 import org.apache.tools.ant.helper.AntXMLContext;
 import org.apache.tools.ant.types.resources.URLResource;
 import org.gridkit.vicluster.MassExec;
+import org.gridkit.vicluster.ViGroup;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.zeroio.WrapperOutputStream;
 
@@ -45,6 +49,21 @@ public class RemoteExecTask extends Task implements TaskContainer {
 	private List<String> patterns = new ArrayList<String>();
 	private List<TaskData> tasks = new ArrayList<TaskData>();
 	private RemoteExecutionHost execHost;
+	
+	public static String getLocalhost() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		}
+		catch(Exception e) {
+			String name = ManagementFactory.getRuntimeMXBean().getName();
+			if (name.indexOf('@') > 0) {
+				return name.substring(name.indexOf('@') + 1);
+			}
+			else {
+				return name;
+			}
+		}
+	}
 	
 	public void setServers(String servers) {
 		origPattern = servers;
@@ -87,7 +106,7 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				final String hostname = node.exec(new Callable<String>(){
 					@Override
 					public String call() throws Exception {
-						return InetAddress.getLocalHost().getHostName();
+						return getLocalhost();
 					}
 				});
 				final LatentProject slave = createSlaveProject(node.toString(), hostname);
@@ -100,6 +119,8 @@ public class RemoteExecTask extends Task implements TaskContainer {
 					@Override
 					public Void call() throws Exception {
 						executeRemoteTasks(slave, hostname, sourceFile, sourceLine, script);
+						System.out.flush();
+						System.err.flush();
 						return null;
 					}
 				});
@@ -108,6 +129,7 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				submissions.add(future);
 			}			
 			MassExec.waitAll(submissions);
+			ViGroup.group(targets.values()).x(CONSOLE).flush();
 		}
 	}
 	

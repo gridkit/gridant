@@ -47,10 +47,16 @@ public class AntRunTest {
 	}
 
 	@Test
-	public void run_remote_echo() throws MalformedURLException, LaunchException {
+	public void run_remote_echo1() throws MalformedURLException, LaunchException {
 		assumeHost("cbox1");
 		assumeHost("cbox2");
-		runRemoteTarget("grid-echo");
+		runRemoteTarget("cbox-grid-echo");
+	}
+
+	@Test
+	public void run_remote_echo2() throws MalformedURLException, LaunchException {
+		assumeHost("fbox");
+		runRemoteTarget("fbox-grid-echo");
 	}
 
 	private void assumeHost(String hostname) {

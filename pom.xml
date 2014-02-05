@@ -9,7 +9,7 @@
     </parent>
     
     <artifactId>grid-ant</artifactId>
-    <version>0.2</version>        
+    <version>0.2-SNAPSHOT</version>        
     <name>${project.groupId}::${project.artifactId}</name>
 
     <licenses>
@@ -32,8 +32,7 @@
         <connection>scm:git:https://github.com/gridkit/gridant.git</connection>
         <developerConnection>scm:git:https://github.com/gridkit/gridant.git</developerConnection>
         <url>https://github.com/gridkit/gridant</url>
-      <tag>grid-ant-0.2</tag>
-  </scm>
+    </scm>
 
     <properties>
         <javaVersion>1.6</javaVersion>

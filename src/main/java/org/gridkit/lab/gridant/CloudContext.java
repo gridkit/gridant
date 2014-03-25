@@ -5,12 +5,14 @@ import static org.gridkit.nanocloud.RemoteNode.REMOTE;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.tools.ant.BuildEvent;
+import org.apache.tools.ant.BuildListener;
 import org.apache.tools.ant.Project;
 import org.gridkit.nanocloud.Cloud;
 import org.gridkit.nanocloud.CloudFactory;
 import org.gridkit.vicluster.ViNode;
 
-public class CloudContext {
+public class CloudContext implements BuildListener {
 
 	public synchronized static CloudContext getInstance(Project project) {
 		CloudContext ctx = project.getReference(GridAntRefs.CLOUD_CONTEXT);
@@ -25,6 +27,7 @@ public class CloudContext {
 		if (ctx == null) {
 			ctx = new CloudContext();
 			project.addReference(GridAntRefs.CLOUD_CONTEXT, ctx);
+			project.addBuildListener(ctx);
 		}
 		return ctx;
 	}
@@ -51,4 +54,48 @@ public class CloudContext {
 		node.x(REMOTE).useSimpleRemoting();
 		return node;
 	}
+	
+	public void shutdown() {
+	    try {
+	        nodeset.shutdown();
+	    }
+	    catch(Exception e) {
+	        System.out.println("Error on slave shutdown: " + e);
+	    }
+	}
+	
+    @Override
+    public void buildStarted(BuildEvent event) {
+        // do nothing
+    }
+
+    @Override
+    public void buildFinished(BuildEvent event) {
+        shutdown();
+    }
+
+    @Override
+    public void targetStarted(BuildEvent event) {
+        // do nothing
+    }
+
+    @Override
+    public void targetFinished(BuildEvent event) {
+        // do nothing
+    }
+
+    @Override
+    public void taskStarted(BuildEvent event) {
+        // do nothing
+    }
+
+    @Override
+    public void taskFinished(BuildEvent event) {
+        // do nothing
+    }
+
+    @Override
+    public void messageLogged(BuildEvent event) {
+        // do nothing
+    }    
 }

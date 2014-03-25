@@ -4,7 +4,7 @@
 
     <groupId>org.gridkit.lab</groupId>
     <artifactId>grid-ant-examples</artifactId>
-    <version>0.2</version><!--grid-ant-version-->
+    <version>0.3-SNAPSHOT</version><!--grid-ant-version-->
     <packaging>pom</packaging>
     <name>${project.groupId}::${project.artifactId}</name>
 

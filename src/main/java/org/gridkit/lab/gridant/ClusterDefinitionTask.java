@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
+import org.gridkit.nanocloud.RemoteNode;
 import org.gridkit.vicluster.ViNode;
 import org.gridkit.vicluster.ViProps;
 import org.gridkit.vicluster.telecontrol.ssh.RemoteNodeProps;
@@ -90,7 +91,9 @@ public class ClusterDefinitionTask extends Task {
 				node.setProp(GridAntProps.REMOTE_ANT_BASE_DIR, basePath);
 			}
 			if (javaPath != null) {
+			    // TODO 0.7 to 0.8 migration atifact
 				RemoteNodeProps.at(node).setRemoteJavaExec(javaPath);
+				node.x(RemoteNode.REMOTE).setRemoteJavaExec(javaPath);
 			}
 			else {
 				RemoteNodeProps.at(node).setRemoteJavaExec("java");
@@ -118,7 +121,7 @@ public class ClusterDefinitionTask extends Task {
 		}
 	}
 
-	public class BasePath {
+    public class BasePath {
 		
 		public void addText(String path) {
 			if (basePath != null) {

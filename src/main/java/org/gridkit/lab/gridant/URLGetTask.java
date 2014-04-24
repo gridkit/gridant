@@ -46,6 +46,7 @@ public class URLGetTask extends Task {
 			if (useRelay) {
 				MasterExecutor mexec = getProject().getReference(GridAntRefs.MASTER_EXECUTOR);
 				if (mexec == null) {
+				    fos.close();
 					throw new BuildException("Relay option can only be used for remote execution");
 				}
 				bytes = mexec.exec(new MasterCallable<byte[]>() {

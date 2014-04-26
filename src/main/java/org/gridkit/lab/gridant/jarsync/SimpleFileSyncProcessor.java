@@ -17,12 +17,11 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import org.gridkit.lab.gridant.jarsync.BatchCopyProcessor.CopyReporter;
-import org.metastatic.rsync.ChecksumPair;
-import org.metastatic.rsync.DataBlock;
-import org.metastatic.rsync.Delta;
-import org.metastatic.rsync.Offsets;
-import org.metastatic.rsync.Rdiff;
+import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
+import org.gridkit.lab.gridant.jarsync.jarsync.DataBlock;
+import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
+import org.gridkit.lab.gridant.jarsync.jarsync.Offsets;
+import org.gridkit.lab.gridant.jarsync.jarsync.Rdiff;
 
 class SimpleFileSyncProcessor implements BatchCopyProcessor {
 
@@ -275,7 +274,7 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 					}
 				}
 			}			
-		}		
+		}					
 	}
 	
 	private static class ActionGroup implements CopyOptions {

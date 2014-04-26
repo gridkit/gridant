@@ -13,6 +13,7 @@ import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -115,6 +116,8 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				final String sourceFile = filename(getLocation().getFileName());
 				final int sourceLine = getLocation().getLineNumber();
 				
+//				node.setProp("gridkit.isolate.trace-classes", "true");
+				
 				Future<Void> future = node.submit(new Callable<Void>(){
 					@Override
 					public Void call() throws Exception {
@@ -127,8 +130,18 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				System.out.println(" -> " + hostname + " (" + nodeName + ")");
 				
 				submissions.add(future);
-			}			
-			MassExec.waitAll(submissions);
+			}
+			try {
+			    MassExec.waitAll(submissions);
+			    exceptionMark();
+			}
+			catch(ExecutionException e) {
+	            System.err.println("Task execution exception");
+	            e.getCause().printStackTrace();
+	            System.err.flush();
+	            throwUncheked(e);
+			    
+			}
 			ViGroup.group(targets.values()).x(CONSOLE).flush();
 		}
 	}
@@ -173,6 +186,12 @@ public class RemoteExecTask extends Task implements TaskContainer {
 					slave.props.put(pname, (String) vp);
 				}
 			}
+			slave.taskDefinitions = new HashMap<String, Class<?>>();
+			Hashtable<String, Class<?>> tbl = getProject().getTaskDefinitions();
+			for(String task: tbl.keySet()) {
+		        slave.taskDefinitions.put(task, tbl.get(task));
+			}
+			
 			return slave;
 			
 		} catch(Exception e) {
@@ -195,6 +214,7 @@ public class RemoteExecTask extends Task implements TaskContainer {
 		MasterExecutor executor;
 		String buildFile;
 		Map<String, String> props;
+		Map<String, Class<?>> taskDefinitions;
 		
 		@Override
 		public Project getProject() {
@@ -227,6 +247,17 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				project.setProperty("ant.file", buildFile);
 				project.setProperty(GridAntProps.SLAVE_HOSTNAME, hostname);
 				project.setProperty(GridAntProps.SLAVE_ID, id);
+				
+				for(String task: taskDefinitions.keySet()) {
+				    try {
+				        project.addTaskDefinition(task, taskDefinitions.get(task));
+	                }
+	                catch(NoClassDefFoundError e) {
+	                    System.out.println("cannot load task definition: " + task);
+	                    // When running Maven antrun plugin, some Maven specific tasks may be added to project.
+	                    // Maven classpath is not fully replicated though
+	                }
+				}
 
 				helper.parse(project, res);
 				project.setName(name + " @ " + hostname);
@@ -255,7 +286,7 @@ public class RemoteExecTask extends Task implements TaskContainer {
     }
 	
 	private static void executeRemoteTasks(LatentProject lp, String hostname, String buildSource, int sourceLine, List<TaskData> script) {
-		Project project = lp.getProject();
+	    Project project = lp.getProject();
 
 		Target target = new Target();
 		String targetName = buildSource + ":" + sourceLine + " @ " + hostname;
@@ -333,7 +364,8 @@ public class RemoteExecTask extends Task implements TaskContainer {
 
 	        for(TaskData child: children) {
 	        	UnknownElement ue = child.instantiate(project);
-	        	rc.addChild(ue.getWrapper());
+	        	rc.addChild(ue.getRuntimeConfigurableWrapper());
+	        	ret.addChild(ue);
 	        }
 	        
 	        return ret;
@@ -384,6 +416,9 @@ public class RemoteExecTask extends Task implements TaskContainer {
 				throw new Error("Unreachable");
 			}
 		}
+    }
+    
+    private static void exceptionMark() throws ExecutionException {        
     }
     
 	private static void throwUncheked(Throwable e) {

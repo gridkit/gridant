@@ -1,0 +1,54 @@
+<project>
+
+	<taskdef resource="org/gridkit/lab/gridant/gridant.properties"/>
+
+	<target name="remote-base1">
+		<cluster type="remote">
+			<basepath>sync-base1</basepath>
+			<server id="server1" host="cbox1"/>
+		</cluster>
+	</target>
+
+	<target name="remote-base2">
+		<cluster type="remote">
+			<basepath>sync-base2</basepath>
+			<server id="server1" host="cbox1"/>
+		</cluster>
+	</target>
+	
+    <target name="simple-sync" depends="remote-base1">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <echo>This is slave ${slave.id}</echo>
+        	<syncdown sourceBase="SimpleFileCopyProcessor">
+        		<copy/>
+        	</syncdown>
+        </remotely>
+    </target>
+
+	<target name="simple-sync2" depends="remote-base2">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <echo>This is slave ${slave.id}</echo>
+        	<syncdown sourceBase="SimpleFileCopyProcessor">
+        		<exclude>**/.mkdir</exclude>
+        		<exclude>**/b.txt.v2</exclude>
+        		<copy/>
+        	</syncdown>
+        </remotely>
+    </target>
+
+	<target name="simple-sync3" depends="remote-base2">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <echo>This is slave ${slave.id}</echo>
+        	<syncdown sourceBase="SimpleFileCopyProcessor">
+        		<exclude>**/.mkdir</exclude>
+        		<exclude>**/b.txt</exclude>
+        		<copy rename="b.txt">**/b.txt.v2</copy>        		
+        		<copy/>
+        	</syncdown>
+        </remotely>
+    </target>
+	
+</project>

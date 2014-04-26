@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.metastatic.rsync.ChecksumPair;
-import org.metastatic.rsync.Delta;
-import org.metastatic.rsync.Rdiff;
+import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
+import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
+import org.gridkit.lab.gridant.jarsync.jarsync.Rdiff;
 
 class SimpleSyncSlave implements FileSyncSlave {
 
@@ -79,7 +79,6 @@ class SimpleSyncSlave implements FileSyncSlave {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<ChecksumPair> readChecksums(String path) throws IOException {
         File file = resolve(path);
         if (!file.isFile()) {

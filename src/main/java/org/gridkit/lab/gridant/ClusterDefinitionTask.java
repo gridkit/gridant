@@ -111,7 +111,7 @@ public class ClusterDefinitionTask extends Task {
 			ViProps.at(node).setLocalType();
 		}
 		else if (TYPE_IN_PROCESS.equals(ntype)) {
-			ViProps.at(node).setInProcessType();
+			ViProps.at(node).setIsolateType();
 		}
 		else if (TYPE_REMOTE.equals(ntype)) {
 			ViProps.at(node).setRemoteType();

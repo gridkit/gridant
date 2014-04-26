@@ -14,51 +14,27 @@ import org.apache.tools.ant.launch.LaunchException;
 import org.junit.Assume;
 import org.junit.Test;
 
-public class AntRunTest {
+public class SyncDownRunTest {
 
+    
+    
 	@Test
-	public void run_echo() throws MalformedURLException, LaunchException {
-		runLocalTarget("grid-echo");
+	public void run_sync() throws MalformedURLException, LaunchException {
+	    deleteAll(new File("target/sync-test"));
+		runLocalTarget("simple-sync");
 	}
 
 	@Test
-	public void run_touch() throws MalformedURLException, LaunchException {
-		deleteAll(new File("target/base1")); 
-		deleteAll(new File("target/base2")); 
-		runLocalTarget("grid-touch");
-		Assert.assertTrue(new File("target/base1/server1.txt").exists());
-		Assert.assertTrue(new File("target/base2/server2.txt").exists());
-	}
-	
-//	@Test
-//	public void run_touch2() throws MalformedURLException, LaunchException {
-//		deleteAll(new File("target/base1")); 
-//		deleteAll(new File("target/base2")); 
-//		runLocalTarget("grid-touch2");
-//		Assert.assertTrue(new File("target/base1/server1-2.txt").exists());
-//		Assert.assertTrue(new File("target/base2/server2-2.txt").exists());
-//	}
-
-	@Test
-	public void run_touch3() throws MalformedURLException, LaunchException {
-		deleteAll(new File("target/base1")); 
-		deleteAll(new File("target/base2")); 
-		runLocalTarget("grid-touch3");
-		Assert.assertTrue(new File("target/base1/server1-3.txt").exists());
-		Assert.assertTrue(new File("target/base2/server2-3.txt").exists());
+	public void run_sync2and3() throws MalformedURLException, LaunchException {
+	    deleteAll(new File("target/sync-test"));
+	    runLocalTarget("simple-sync2");
+	    runLocalTarget("simple-sync3");
 	}
 
 	@Test
-	public void run_remote_echo1() throws MalformedURLException, LaunchException {
-		assumeHost("cbox1");
-		assumeHost("cbox2");
-		runRemoteTarget("cbox-grid-echo");
-	}
-
-	@Test
-	public void run_remote_echo2() throws MalformedURLException, LaunchException {
-		assumeHost("fbox");
-		runRemoteTarget("fbox-grid-echo");
+	public void run_remote_sync() throws MalformedURLException, LaunchException {
+	    assumeHost("cbox1");
+	    runRemoteTarget("simple-sync");
 	}
 
 	private void assumeHost(String hostname) {
@@ -88,8 +64,9 @@ public class AntRunTest {
 	}
 		
 	private void runLocalTarget(String target) throws MalformedURLException, LaunchException {
-		errorMessage = null;
-		Assert.assertEquals(0, MockLauncher.main("-listener", Listener.class.getName(), "-buildfile", "src/test/resources/local-test-script.xml", target));	
+		errorMessage = null;		
+		System.setProperty("basedir", "src/test/resources");
+		Assert.assertEquals(0, MockLauncher.main("-listener", Listener.class.getName(), "-buildfile", "src/test/resources/sync-down-test-script.xml", target));	
 		if (errorMessage != null) {
 			Assert.fail(errorMessage);
 		}
@@ -97,7 +74,8 @@ public class AntRunTest {
 
 	private void runRemoteTarget(String target) throws MalformedURLException, LaunchException {
 		errorMessage = null;
-		Assert.assertEquals(0, MockLauncher.main("-listener", Listener.class.getName(), "-buildfile", "src/test/resources/remote-test-script.xml", target));
+		System.setProperty("basedir", "src/test/resources");
+		Assert.assertEquals(0, MockLauncher.main("-listener", Listener.class.getName(), "-buildfile", "src/test/resources/remote-sync-down-test-script.xml", target));
 		if (errorMessage != null) {
 			Assert.fail(errorMessage);
 		}

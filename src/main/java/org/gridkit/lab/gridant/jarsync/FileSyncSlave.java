@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-import org.metastatic.rsync.ChecksumPair;
-import org.metastatic.rsync.Delta;
+import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
+import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
 
 /**
  * 

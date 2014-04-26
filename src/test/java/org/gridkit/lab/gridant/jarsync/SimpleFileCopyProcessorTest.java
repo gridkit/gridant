@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-import org.apache.tools.ant.taskdefs.optional.unix.Symlink;
 import org.gridkit.lab.gridant.jarsync.BatchCopyProcessor.CopyBatch;
 import org.gridkit.lab.gridant.jarsync.BatchCopyProcessor.CopyReporter;
 import org.junit.Assert;
@@ -250,8 +249,10 @@ public class SimpleFileCopyProcessorTest {
 	
 	private static class CopyTracker implements CopyReporter {
 
-		String src;
-		String dst;
+		@SuppressWarnings("unused")
+        String src;
+		@SuppressWarnings("unused")
+        String dst;
 		StringBuilder sb = new StringBuilder();
 		
 		public CopyTracker(String source, String dest) {

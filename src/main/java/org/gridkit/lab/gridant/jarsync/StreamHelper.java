@@ -31,18 +31,19 @@ class StreamHelper {
 			while(n < data.length) {
 				int m = fis.read(data, n, data.length - n);
 				if (m < 0) {
+				    close(fis);
 					throw new RuntimeException("Cannot read file: " + file.getCanonicalPath());
 				}
 				n += m;
 			}
-			fis.close();
+			close(fis);
 			return data;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} 
 	}
-	
-	public static String digest(byte[] data, String algorithm) {
+
+    public static String digest(byte[] data, String algorithm) {
 		try {
 			MessageDigest md = MessageDigest.getInstance(algorithm);
 			byte[] digest = md.digest(data);
@@ -108,7 +109,7 @@ class StreamHelper {
 
 	public static void copy(InputStream in, OutputStream out) throws IOException {
 		try {
-			byte[] buf = new byte[1 << 12];
+			byte[] buf = new byte[1 << 18];
 			while(true) {
 				int n = in.read(buf);
 				if(n >= 0) {
@@ -134,5 +135,13 @@ class StreamHelper {
 		if(n >= 0) {
 			out.write(buf, 0, n);
 		}
-	}	
+	}
+
+    private static void close(FileInputStream fis) {
+        try {
+            fis.close();
+        } catch (IOException e) {
+            // ignore
+        }
+    }	
 }

@@ -536,18 +536,20 @@ public class Rdiff {
      *             If reading/writing fails.
      */
     public void rebuildFile(File basis, List<Delta> deltas, OutputStream out) throws IOException {
-        File temp = Rebuilder.rebuildFile(basis, deltas);
-        temp.deleteOnExit();
+        File temp = Rebuilder.rebuildFile(basis, deltas);        
         FileInputStream fin = new FileInputStream(temp);
-        byte[] buf = new byte[CHUNK_SIZE];
-        int len = 0;
-        while ((len = fin.read(buf)) != -1) {
-            out.write(buf, 0, len);
+        try {
+            byte[] buf = new byte[CHUNK_SIZE];
+            int len = 0;
+            while ((len = fin.read(buf)) != -1) {
+                out.write(buf, 0, len);
+            }
+        }
+        finally {
+            fin.close();
+            temp.delete();  
         }
     }
-
-    // Own methods.
-    // -----------------------------------------------------------------
 
     /**
      * Write a "COPY" command to <code>out</code>.

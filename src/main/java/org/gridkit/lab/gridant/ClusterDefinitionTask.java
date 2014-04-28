@@ -127,7 +127,7 @@ public class ClusterDefinitionTask extends Task {
 			if (basePath != null) {
 				throw new RuntimeException("'basepath' is already set");
 			}
-			basePath = path;
+			basePath = getProject().replaceProperties(path);
 		}
 	}
 
@@ -137,17 +137,17 @@ public class ClusterDefinitionTask extends Task {
 			if (javaPath != null) {
 				throw new RuntimeException("'javapath' is already set");
 			}
-			javaPath = path;
+			javaPath = getProject().replaceProperties(path);
 		}
 	}
 
 	public class DefaultType {
 		
-		public void addText(String path) {
+		public void addText(String value) {
 			if (type != null) {
 				throw new RuntimeException("'type' is already set");
 			}
-			type = path;
+			type = getProject().replaceProperties(value);
 		}
 	}
 

@@ -23,18 +23,23 @@ public class SyncDownTask extends Task {
     private List<BatchConfElement> batchConfig = new ArrayList<BatchConfElement>();
     
     
+    protected String filter(String value) {
+        return value == null ? null : getProject().replaceProperties(value);
+    }
+    
     public void setSourceBase(String sourceBase) {
-        this.sourceBase = sourceBase;
+        this.sourceBase = filter(sourceBase);
     }
 
     public void setTargetBase(String targetBase) {
-        this.targetBase = targetBase;
+        this.targetBase = filter(targetBase);
     }
     
     public void addConfiguredRetain(Retain element) {
         if (element.pattern == null) {
             throw new IllegalArgumentException("Pattern required for <retain> element");
         }
+        element.pattern = filter(element.pattern);
         batchConfig.add(element);
     }
 
@@ -42,6 +47,7 @@ public class SyncDownTask extends Task {
         if (element.pattern == null) {
             throw new IllegalArgumentException("Pattern required for <exclude> element");
         }
+        element.pattern = filter(element.pattern);
         batchConfig.add(element);
     }
 
@@ -49,10 +55,15 @@ public class SyncDownTask extends Task {
         if (element.pattern == null) {
             throw new IllegalArgumentException("Pattern required for <prune> element");
         }
+        element.pattern = filter(element.pattern);
         batchConfig.add(element);
     }
 
     public void addConfiguredCopy(Copy element) {
+        element.pattern = filter(element.pattern);
+        element.rename = filter(element.rename);
+        element.sourceBase = filter(element.sourceBase);
+        element.targetBase = filter(element.targetBase);
         batchConfig.add(element);
     }
 

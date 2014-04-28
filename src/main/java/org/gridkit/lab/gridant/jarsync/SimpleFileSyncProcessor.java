@@ -381,9 +381,12 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 				        List<Delta> deltas = produceDeltas(rdiff, digest, fis);
 				        long dataSize = dataSize(deltas);
 				        long fileSize = source.length();
-				        syncTarget.patchFile(targetPath, deltas);
 				        boolean trim = isOffsetOnly(deltas);
-				        boolean match = trim && doesMatchSize(deltas, fileSize);
+				        boolean match = isFullMatch(deltas, fileSize);
+				        if (!match) {
+				            // touch file only if it is different
+				            syncTarget.patchFile(targetPath, deltas);
+				        }
 				        if (match) {
 				            reporter.report(sourcePath, targetPath, String.format("<match>"));
 				        }
@@ -414,9 +417,19 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
             return true;
         }
 
-        private boolean doesMatchSize(List<Delta> deltas, long fileSize) {
-            Offsets offs = (Offsets) deltas.get(deltas.size() - 1);
-            return fileSize == offs.getWriteOffset() + offs.getBlockLength();
+        private boolean isFullMatch(List<Delta> deltas, long fileSize) {
+            long bump = 0;
+            for(Delta delta: deltas) {
+                if (delta instanceof Offsets) {
+                    Offsets offs = (Offsets) delta;
+                    if (offs.getOldOffset() == offs.getNewOffset() && offs.getNewOffset() == bump) {
+                        bump += offs.getBlockLength();
+                        continue;
+                    }                    
+                }
+                return false;
+            }
+            return fileSize == bump;
         }
         
         private List<Delta> produceDeltas(Rdiff rdiff, List<ChecksumPair> digest, FileInputStream fis) throws IOException {

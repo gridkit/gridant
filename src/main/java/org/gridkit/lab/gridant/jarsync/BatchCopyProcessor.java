@@ -5,7 +5,7 @@ import java.io.IOException;
 
 public interface BatchCopyProcessor {
 
-	public CopyBatch startBatch(String path);
+	public CopyBatch startBatch(FileSyncParty syncSource);
 	
 	public interface CopyBatch {
 
@@ -15,7 +15,7 @@ public interface BatchCopyProcessor {
 
 		/**
 		 * Pattern for target paths which should be
-		 * excluded from synchronisation.
+		 * excluded from synchronization.
 		 */
 		public void targetRetain(String pattern);
 		
@@ -23,7 +23,9 @@ public interface BatchCopyProcessor {
 		
 		public void sourcePrune(String pattern);
 		
-		public void execute(FileSyncSlave syncTarget, CopyReporter reporter) throws IOException;
+		public void prepare(CopyReporter reporter) throws IOException;
+
+		public void execute(FileSyncParty syncTarget, CopyReporter reporter) throws IOException;
 		
 	}
 	

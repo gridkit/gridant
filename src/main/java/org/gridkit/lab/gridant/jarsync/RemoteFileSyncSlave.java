@@ -10,15 +10,15 @@ import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
 import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
 import org.gridkit.vicluster.telecontrol.ssh.OutputStreamRemoteAdapter;
 
-public class RemoteFileSyncSlave implements FileSyncSlave, Serializable {
+public class RemoteFileSyncSlave implements FileSyncParty, Serializable {
 
     private static final long serialVersionUID = 20140426L;
     
     @SuppressWarnings("unused")
-    private transient FileSyncSlave originalTarget;
-    private final FileSyncSlave proxyTarget;
+    private transient FileSyncParty originalTarget;
+    private final FileSyncParty proxyTarget;
     
-    public RemoteFileSyncSlave(FileSyncSlave target) {
+    public RemoteFileSyncSlave(FileSyncParty target) {
         this.originalTarget = target;
         this.proxyTarget = new RemoteSkeleton(target);
     }
@@ -43,12 +43,20 @@ public class RemoteFileSyncSlave implements FileSyncSlave, Serializable {
         return proxyTarget.makePath(path);
     }
 
-    public OutputStream openFile(String path) throws IOException {
-        return proxyTarget.openFile(path);
+    public OutputStream openFileForWrite(String path) throws IOException {
+        return proxyTarget.openFileForWrite(path);
+    }
+    
+    public void streamFile(String path, OutputStream sink) throws IOException {
+        proxyTarget.streamFile(path, new OutputStreamRemoteAdapter(sink));
     }
 
-    public void patchFile(String path, List<Delta> deltas) throws IOException {
-        proxyTarget.patchFile(path, deltas);
+    public List<Delta> preparePatch(String path, List<ChecksumPair> digest) throws IOException {
+        return proxyTarget.preparePatch(path, digest);
+    }
+
+    public void applyPatch(String path, List<Delta> deltas) throws IOException {
+        proxyTarget.applyPatch(path, deltas);
     }
 
     public void eraseFile(String path) throws IOException {
@@ -59,15 +67,15 @@ public class RemoteFileSyncSlave implements FileSyncSlave, Serializable {
         proxyTarget.eraseDirectory(path);
     }
 
-    private static interface RFileSyncSlave extends FileSyncSlave, Remote {
+    private static interface RFileSyncSlave extends FileSyncParty, Remote {
         
     }
     
     private static class RemoteSkeleton implements RFileSyncSlave {
         
-        private final FileSyncSlave slave;
+        private final FileSyncParty slave;
 
-        public RemoteSkeleton(FileSyncSlave slave) {
+        public RemoteSkeleton(FileSyncParty slave) {
             this.slave = slave;
         }
 
@@ -91,12 +99,20 @@ public class RemoteFileSyncSlave implements FileSyncSlave, Serializable {
             return slave.makePath(path);
         }
 
-        public OutputStream openFile(String path) throws IOException {
-            return new OutputStreamRemoteAdapter(slave.openFile(path));
+        public OutputStream openFileForWrite(String path) throws IOException {
+            return new OutputStreamRemoteAdapter(slave.openFileForWrite(path));
+        }
+        
+        public void streamFile(String path, OutputStream sink) throws IOException {
+            slave.streamFile(path, sink);
         }
 
-        public void patchFile(String path, List<Delta> deltas) throws IOException {
-            slave.patchFile(path, deltas);
+        public List<Delta> preparePatch(String path, List<ChecksumPair> digest) throws IOException {
+            return slave.preparePatch(path, digest);
+        }
+
+        public void applyPatch(String path, List<Delta> deltas) throws IOException {
+            slave.applyPatch(path, deltas);
         }
 
         public void eraseFile(String path) throws IOException {

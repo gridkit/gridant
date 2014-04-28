@@ -1,6 +1,7 @@
 package org.gridkit.lab.gridant.jarsync;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +82,17 @@ public class SyncDownTask extends Task {
         
         String name = getProject().getProperty(GridAntProps.SLAVE_ID);
         
-        mexec.exec(new SyncExecutor(name, sourceBase, batchConfig, new RemoteFileSyncSlave(sync)));
+        CopyBatch batch = mexec.exec(new SyncExecutor(name, sourceBase, batchConfig));
+        try {
+            batch.execute(sync, new CopyReporter() {
+                @Override
+                public void report(String source, String destination, String remark) {
+                    System.out.println(String.format("%-10s %s -> %s", remark, source, destination));
+                }
+            });
+        } catch (IOException e) {
+            throw new BuildException(e);
+        }
     }
     
     private static void configure(CopyBatch batch, List<BatchConfElement> config) {
@@ -90,31 +101,34 @@ public class SyncDownTask extends Task {
         }
     }
     
-    private static class SyncExecutor implements MasterCallable<Void>, CopyReporter, Serializable {
+    private static class SyncExecutor implements MasterCallable<CopyBatch>, CopyReporter, Serializable {
 
         private static final long serialVersionUID = 20140426L;
         
         String node;
         String sourceBase; 
         List<BatchConfElement> config;
-        FileSyncSlave sync;
         
-        public SyncExecutor(String node,  String sourceBase, List<BatchConfElement> config, FileSyncSlave sync) {
+        public SyncExecutor(String node,  String sourceBase, List<BatchConfElement> config) {
             this.node = node;
             this.sourceBase = sourceBase;
             this.config = config;
-            this.sync = sync;
         }
 
         @Override
-        public Void call(Project project) throws Exception {
+        public CopyBatch call(Project project) throws Exception {
             File source = sourceBase == null ? project.getBaseDir() : project.resolveFile(sourceBase);
             SimpleFileSyncProcessor processor = new SimpleFileSyncProcessor();
-            CopyBatch batch = processor.startBatch(source.getPath());
+            CopyBatch batch = processor.startBatch(new SimpleSyncSlave(source));
             configure(batch, config);
-            batch.execute(sync, this);
+            batch.prepare(new CopyReporter() {
+                @Override
+                public void report(String source, String destination, String remark) {
+                    throw new RuntimeException("IO failure [" + source + "] " + remark);
+                }
+            });           
             
-            return null;
+            return batch;
         }
 
         @Override

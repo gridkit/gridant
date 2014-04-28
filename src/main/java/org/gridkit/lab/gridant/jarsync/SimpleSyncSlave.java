@@ -14,11 +14,18 @@ import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
 import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
 import org.gridkit.lab.gridant.jarsync.jarsync.Rdiff;
 
-class SimpleSyncSlave implements FileSyncSlave {
+class SimpleSyncSlave implements FileSyncParty {
 
     private Rdiff rdiff;
     private File basePath;
     
+    public SimpleSyncSlave(String path) {
+        this.basePath = new File(path);
+        if (basePath.isFile()) {
+            throw new IllegalArgumentException("Path [path] is a plain file");
+        }
+    }
+
     public SimpleSyncSlave(File basePath) {
         this.basePath = basePath;
         this.rdiff = new Rdiff(); 
@@ -112,7 +119,7 @@ class SimpleSyncSlave implements FileSyncSlave {
     }
 
     @Override
-    public OutputStream openFile(String path) throws IOException {
+    public OutputStream openFileForWrite(String path) throws IOException {
         File file = resolve(path);
         if (file.getParentFile() != null || file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
@@ -122,7 +129,28 @@ class SimpleSyncSlave implements FileSyncSlave {
     }
 
     @Override
-    public void patchFile(String path, List<Delta> deltas) throws IOException {
+    public void streamFile(String path, OutputStream sink) throws IOException {
+        File file = resolve(path);
+        FileInputStream fis = new FileInputStream(file);
+        StreamHelper.copy(fis, sink);
+    }
+
+    @Override
+    public List<Delta> preparePatch(String path, List<ChecksumPair> digest) throws IOException {
+        File file = resolve(path);
+        FileInputStream in = new FileInputStream(file);
+        try {
+            return rdiff.makeDeltas(digest, in);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
+        }
+        finally {
+            in.close();
+        }
+    }
+
+    @Override
+    public void applyPatch(String path, List<Delta> deltas) throws IOException {
         File file = resolve(path);
         if (file.getParentFile() != null || file.getParentFile().exists()) {
             file.getParentFile().mkdirs();

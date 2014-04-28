@@ -17,7 +17,7 @@ class RemoteBuildLogger implements BuildLogger, Serializable {
 	private RemoteLogger logger;
 	
 	public RemoteBuildLogger(BuildLogger logger, Project proj) {
-		this.logger = new ProxyWrapper(logger, proj);
+		this.logger = RemoteExporter.exportOneWay(new ProxyWrapper(logger, proj), RemoteLogger.class);
 	}
 	
 	public void buildStarted(BuildEvent event) {
@@ -74,7 +74,6 @@ class RemoteBuildLogger implements BuildLogger, Serializable {
 	public void setErrorPrintStream(PrintStream err) {
 		throw new UnsupportedOperationException();
 	}
-
 	
 	static interface RemoteLogger extends Remote {
 		

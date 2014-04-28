@@ -23,7 +23,7 @@ public class SimpleFileCopyProcessorTest {
 		TestHelper.rmrf("target/sfcp");
 	}
 	
-	public FileSyncSlave sync(String dst) {
+	public FileSyncParty sync(String dst) {
 	    return new SimpleSyncSlave(new File(dst));
 	}
 	
@@ -32,11 +32,12 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 	    String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 	    String dst = TARGET_PATH + "/" + methodName();
-        CopyBatch batch = sfcp.startBatch(src);
+        CopyBatch batch = sfcp.startBatch(sync(src));
         CopyTracker tracker = new CopyTracker(src, dst);
         batch.sourceExclude("**/.mkdir");
         batch.sourceExclude("**/*.v2");        
         batch.copy("**");
+        batch.prepare(tracker);
         batch.execute(sync(dst), tracker);
         
         StringBuilder expected = new StringBuilder();
@@ -56,11 +57,12 @@ public class SimpleFileCopyProcessorTest {
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
 		{
-    		CopyBatch batch = sfcp.startBatch(src);
+    		CopyBatch batch = sfcp.startBatch(sync(src));
     		CopyTracker tracker = new CopyTracker(src, dst);
     		batch.sourceExclude("**/.mkdir");
     		batch.sourceExclude("**/*.v2");
     		batch.copy("**");
+            batch.prepare(tracker);
     		batch.execute(sync(dst), tracker);
     		
     		StringBuilder expected = new StringBuilder();
@@ -78,12 +80,12 @@ public class SimpleFileCopyProcessorTest {
 		sync(dst).makePath("to_be_deleted2");
 		sync(dst).makePath("to_be_retained1");
 		sync(dst).makePath("to_be_retained2");
-		write(sync(dst).openFile("to_be_deleted2/garbage.txt"), "garbage");
-		write(sync(dst).openFile("to_be_retained2/garbage.log"), "garbage");
-		write(sync(dst).openFile("src/main/root/override1/garbage.txt"), "garbage");
+		write(sync(dst).openFileForWrite("to_be_deleted2/garbage.txt"), "garbage");
+		write(sync(dst).openFileForWrite("to_be_retained2/garbage.log"), "garbage");
+		write(sync(dst).openFileForWrite("src/main/root/override1/garbage.txt"), "garbage");
 		
         {
-            CopyBatch batch = sfcp.startBatch(src);
+            CopyBatch batch = sfcp.startBatch(sync(src));
             CopyTracker tracker = new CopyTracker(src, dst);
             batch.sourceExclude("**/.mkdir");
             batch.sourceExclude("**/b.txt");            
@@ -91,6 +93,7 @@ public class SimpleFileCopyProcessorTest {
             batch.copy("**");
             batch.targetRetain("to_be_retained1/**");
             batch.targetRetain("to_be_retained2/*.log");
+            batch.prepare(tracker);
             batch.execute(sync(dst), tracker);
             
             StringBuilder expected = new StringBuilder();
@@ -101,8 +104,8 @@ public class SimpleFileCopyProcessorTest {
             expected.append(" -> src/main/root/override1/garbage.txt <prune>").append("\n"); 
             expected.append("src/main/root/override2 -> src/main/root/override2 <dir>").append("\n"); 
             expected.append("src/main/root/x.prop -> src/main/root/x.prop <match>").append("\n"); 
-            expected.append(" -> to_be_deleted1/ <prune>").append("\n"); 
-            expected.append(" -> to_be_deleted2/ <prune>").append("\n"); 
+            expected.append(" -> to_be_deleted1 <prune>").append("\n"); 
+            expected.append(" -> to_be_deleted2 <prune>").append("\n"); 
     
             Assert.assertEquals(expected.toString(), tracker.toString());
         }
@@ -119,12 +122,13 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
-		CopyBatch batch = sfcp.startBatch(src);
+		CopyBatch batch = sfcp.startBatch(sync(src));
 		CopyTracker tracker = new CopyTracker(src, dst);
 		batch.sourceExclude("**/.mkdir");
         batch.sourceExclude("**/*.v2");		
 		batch.copy("**");
 		batch.sourcePrune("**");
+        batch.prepare(tracker);
 		batch.execute(sync(dst), tracker);
 		
 		StringBuilder expected = new StringBuilder();
@@ -141,12 +145,13 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
-		CopyBatch batch = sfcp.startBatch(src);
+		CopyBatch batch = sfcp.startBatch(sync(src));
 		CopyTracker tracker = new CopyTracker(src, dst);
 		batch.sourceExclude("**/.mkdir");
         batch.sourceExclude("**/*.v2");		
 		batch.copy("**");
 		batch.sourcePrune("**/*2");
+        batch.prepare(tracker);		
 		batch.execute(sync(dst), tracker);
 		
 		StringBuilder expected = new StringBuilder();
@@ -164,11 +169,12 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
-		CopyBatch batch = sfcp.startBatch(src);
+		CopyBatch batch = sfcp.startBatch(sync(src));
 		CopyTracker tracker = new CopyTracker(src, dst);
 		batch.copy("**/pom.xml");
 		batch.copy("**/a.txt").rename("/AAA.txt");
 		batch.sourcePrune("**");
+        batch.prepare(tracker);
 		batch.execute(sync(dst), tracker);
 		
 		StringBuilder expected = new StringBuilder();
@@ -183,13 +189,14 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
-		CopyBatch batch = sfcp.startBatch(src);
+		CopyBatch batch = sfcp.startBatch(sync(src));
 		CopyTracker tracker = new CopyTracker(src, dst);
 		batch.sourceExclude("**/.mkdir");
         batch.sourceExclude("**/*.v2");		
 		batch.copy("**/a.txt").rename("AAA.txt");
 		batch.copy("**");
 		batch.sourcePrune("**");
+        batch.prepare(tracker);
 		batch.execute(sync(dst), tracker);
 		
 		StringBuilder expected = new StringBuilder();
@@ -206,12 +213,13 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 	    String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 	    String dst = TARGET_PATH + "/" + methodName();
-	    CopyBatch batch = sfcp.startBatch(src);
+	    CopyBatch batch = sfcp.startBatch(sync(src));
 	    CopyTracker tracker = new CopyTracker(src, dst);
 	    batch.sourceExclude("**/.mkdir");
         batch.sourceExclude("**/*.v2");	    
 	    batch.copy("src/main/", "copy_2/", "root/**.txt");
 	    batch.copy("src/main/root/", "copy_1/", "**.prop");
+        batch.prepare(tracker);
 	    batch.execute(sync(dst), tracker);
 	    
 	    StringBuilder expected = new StringBuilder();
@@ -227,12 +235,13 @@ public class SimpleFileCopyProcessorTest {
 	    SimpleFileSyncProcessor sfcp = new SimpleFileSyncProcessor();
 		String src = "src/test/resources/SimpleFileCopyProcessor/root1";
 		String dst = TARGET_PATH + "/" + methodName();
-		CopyBatch batch = sfcp.startBatch(src);
+		CopyBatch batch = sfcp.startBatch(sync(src));
 		CopyTracker tracker = new CopyTracker(src, dst);
 		batch.copy("**/*.txt").rename("AAA.txt");
 		batch.copy("**");
 		batch.sourcePrune("**");
 		try {
+	        batch.prepare(tracker);
 			batch.execute(sync(dst), tracker);
 			Assert.fail("Exception expected");
 		}

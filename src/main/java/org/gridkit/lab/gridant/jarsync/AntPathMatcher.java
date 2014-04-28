@@ -16,6 +16,7 @@
 
 package org.gridkit.lab.gridant.jarsync;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -51,9 +52,11 @@ import java.util.regex.Pattern;
  * @author Rossen Stoyanchev
  * @since 16.07.2003
  */
-class AntPathMatcher {
+class AntPathMatcher implements Serializable {
 
-	private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{[^/]+?\\}");
+    private static final long serialVersionUID = 20140427L;
+
+    private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{[^/]+?\\}");
 
 	/** Default path separator: "/" */
 	public static final String DEFAULT_PATH_SEPARATOR = "/";
@@ -397,7 +400,9 @@ class AntPathMatcher {
 	}
 
 
-	private static class AntPatternComparator implements Comparator<String> {
+	private static class AntPatternComparator implements Comparator<String>, Serializable {
+
+        private static final long serialVersionUID = 20140427L;
 
 		private final String path;
 
@@ -485,9 +490,11 @@ class AntPathMatcher {
 	 * <p>The pattern may contain special characters: '*' means zero or more characters; '?' means one and
 	 * only one character; '{' and '}' indicate a URI template pattern. For example <tt>/users/{user}</tt>.
 	 */
-	private static class AntPathStringMatcher {
+	private static class AntPathStringMatcher implements Serializable {
 
-		private static final Pattern GLOB_PATTERN = Pattern.compile("\\?|\\*|\\{((?:\\{[^/]+?\\}|[^/{}]|\\\\[{}])+?)\\}");
+        private static final long serialVersionUID = 20140427L;
+
+        private static final Pattern GLOB_PATTERN = Pattern.compile("\\?|\\*|\\{((?:\\{[^/]+?\\}|[^/{}]|\\\\[{}])+?)\\}");
 
 		private static final String DEFAULT_VARIABLE_PATTERN = "(.*)";
 

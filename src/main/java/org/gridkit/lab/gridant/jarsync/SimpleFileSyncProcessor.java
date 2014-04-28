@@ -1,10 +1,8 @@
 package org.gridkit.lab.gridant.jarsync;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.NoSuchAlgorithmException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,50 +18,56 @@ import java.util.TreeSet;
 import org.gridkit.lab.gridant.jarsync.jarsync.ChecksumPair;
 import org.gridkit.lab.gridant.jarsync.jarsync.DataBlock;
 import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
-import org.gridkit.lab.gridant.jarsync.jarsync.Offsets;
-import org.gridkit.lab.gridant.jarsync.jarsync.Rdiff;
 
 class SimpleFileSyncProcessor implements BatchCopyProcessor {
 
 	@Override
-	public CopyBatch startBatch(String path) {
-		return new Batch(path);
+	public CopyBatch startBatch(FileSyncParty source) {
+		return new Batch(source);
 	}
 
-	private static class Batch implements CopyBatch {
+	private static class Batch implements CopyBatch, Serializable {
 		
-		private File rootFile;
-		private Map<String, File> remainder = new TreeMap<String, File>();
+        private static final long serialVersionUID = 20140427L;
+        
+		private final class ErrorChecker implements CopyReporter {
+            private final CopyReporter reporter;
+            boolean error = false;
+
+            private ErrorChecker(CopyReporter reporter) {
+                this.reporter = reporter;
+            }
+
+            @Override
+            public void report(String source, String destination, String remark) {
+                error = true;
+                reporter.report(source, destination, remark); 
+            }
+        }
+
+
+        private transient FileSyncParty source;
+		private FileSyncParty remoteSource;
+		private Set<String> remainder = new TreeSet<String>();
 		private Map<String, Action> actions = new TreeMap<String, Action>();
 		private AntPathMatcher pathMatcher = new AntPathMatcher();
 		private List<String> targetExcludes = new ArrayList<String>(); 
 
-		public Batch(String path) {
-			rootFile = new File(path);
-			if (!rootFile.exists()) {
-				throw new IllegalArgumentException("Path [" + path + "] does not exists");
-			}
-			if (rootFile.isFile()) {
-				throw new IllegalArgumentException("Path [" + path + "] is not a directory");
-			}
-			else {
-				collectTree(rootFile, "");
-			}
+		public Batch(FileSyncParty source) {
+			this.source = source;
+			this.remoteSource = new RemoteFileSyncSlave(source);
+			collectTree("");
 		}
 		
 		
-		private void collectTree(File parent, String path) {
-			File[] files = parent.listFiles();
-			if (files != null) {
-				for(File f: files) {
-					if (f.isDirectory()) {
-						remainder.put(path + f.getName() + "/", f);
-					}
-					else {
-						remainder.put(path + f.getName(), f);
-					}
-					collectTree(f, path + f.getName() + "/");
-				}
+		private void collectTree(String path) {
+			for(String f: source.listDirectories(path)) {
+				String child = path + f + "/";
+                remainder.add(child);
+                collectTree(child);
+			}
+			for(String f: source.listFiles(path)) {
+			    remainder.add(path + f);
 			}
 		}
 
@@ -74,16 +78,16 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 
         @Override
 		public CopyOptions copy(String pattern) {
-			Map<String, CopyAction> actions = new TreeMap<String, CopyAction>();
-			for(String path: remainder.keySet()) {
-				if (pathMatcher.match(pattern, path)) {
-					CopyAction a = new CopyAction(path, remainder.get(path));
-					actions.put(path, a);
-					this.actions.put(path, a);
-				}
-			}
-			remainder.keySet().removeAll(actions.keySet());
-			return new ActionGroup(actions.values());
+            Map<String, CopyAction> actions = new TreeMap<String, CopyAction>();
+            for(String path: remainder) {
+            	if (pathMatcher.match(pattern, path)) {
+            		CopyAction a = new CopyAction(path);
+            		actions.put(path, a);
+            		this.actions.put(path, a);
+            	}
+            }
+            remainder.removeAll(actions.keySet());
+            return new ActionGroup(actions.values());
 		}
 
 		@Override
@@ -98,9 +102,9 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 		    }
 		    
 		    Map<String, CopyAction> actions = new TreeMap<String, CopyAction>();
-		    for(String path: remainder.keySet()) {
+		    for(String path: remainder) {
 		        if (pathMatcher.match(rebase(sourceBase, pattern), path)) {
-		            CopyAction a = new CopyAction(path, remainder.get(path));
+		            CopyAction a = new CopyAction(path);
 		            String tPath = path;
 		            if (sourceBase != null && (!sourceBase.equals("."))) {
 		                tPath = path.substring(sourceBase.length());
@@ -114,7 +118,7 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 		            this.actions.put(path, a);
 		        }
 		    }
-		    remainder.keySet().removeAll(actions.keySet());
+		    remainder.removeAll(actions.keySet());
 		    return new ActionGroup(actions.values());
 		}
 		
@@ -131,12 +135,12 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 		@Override
 		public void sourceExclude(String pattern) {
 			Set<String> paths = new HashSet<String>();
-			for(String path: remainder.keySet()) {
+			for(String path: remainder) {
 				if (pathMatcher.match(pattern, path)) {
 					paths.add(path);
 				}
 			}
-			remainder.keySet().removeAll(paths);
+			remainder.removeAll(paths);
 		}
 		
 		@Override
@@ -144,7 +148,7 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 			Set<String> paths = new HashSet<String>();
 			for(String path: actions.keySet()) {
 			    CopyAction action = (CopyAction) actions.get(path);
-				if (action.source.isDirectory()) {
+				if (action.sourcePath.endsWith("/")) {
 					if (pathMatcher.match(pattern, path)) {
 						paths.add(path);
 					}
@@ -154,10 +158,20 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 		}
 		
 		@Override
-		public void execute(FileSyncSlave syncSlave, CopyReporter reporter) throws IOException {
-			Rdiff rdiff = new Rdiff();
+        public void prepare(final CopyReporter reporter) throws IOException {
+		    ErrorChecker delegate = new ErrorChecker(reporter);
+            for(Action action: actions.values()) {
+                action.prepare(source, reporter);                
+            }
+            if (delegate.error) {
+                throw new IOException("Batch prepare has failed");
+            }
+        }
+
+        @Override
+		public void execute(FileSyncParty syncTarget, CopyReporter reporter) throws IOException {
 			autoprune();
-			eraseTarget(syncSlave);
+			eraseTarget(syncTarget);
 			List<Action> alist = new ArrayList<Action>(actions.values());
 			Collections.sort(alist, new Comparator<Action>() {
 
@@ -190,12 +204,12 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 			}
 			else {
 				for(Action action: alist) {
-					action.perform(rdiff, syncSlave, reporter);
+					action.perform(remoteSource, syncTarget, reporter);
 				}
 			}
 		}
 
-		private void eraseTarget(FileSyncSlave syncTarget) {
+		private void eraseTarget(FileSyncParty syncTarget) {
 		    SortedSet<String> retained = new TreeSet<String>();
 		    SortedSet<String> deleted = new TreeSet<String>();
 		    SortedSet<String> created = new TreeSet<String>();
@@ -227,7 +241,7 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 
 
 
-        private void eraseTarget(SortedSet<String> retained, SortedSet<String> deleted, SortedSet<String> created, FileSyncSlave syncTarget, String path) {
+        private void eraseTarget(SortedSet<String> retained, SortedSet<String> deleted, SortedSet<String> created, FileSyncParty syncTarget, String path) {
             fileLoop:
             for(String file : syncTarget.listFiles(path)) {
                 String fpath = path == null ? file : path + "/" + file;
@@ -300,18 +314,25 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 	    
 	    String getTargetPath();
 
-        void perform(Rdiff rdiff, FileSyncSlave syncTarget, CopyReporter reporter) throws IOException;
+        void prepare(FileSyncParty syncSource, CopyReporter reporter);
+
+        void perform(FileSyncParty syncSource, FileSyncParty syncTarget, CopyReporter reporter) throws IOException;
 	    
 	}
 	
-	private static class TargetClean implements Action {
+	private static class TargetClean implements Action, Serializable {
 	    
+        private static final long serialVersionUID = 20140427L;
+        
 	    private String targetPath;
 	    private boolean isDir;
 
 	    public TargetClean(String targetPath, boolean isDir) {
             this.targetPath = targetPath;
             this.isDir = isDir;
+            if (isDir && !targetPath.endsWith("/")) {
+                this.targetPath = this.targetPath + "/";
+            }
         }
 
         @Override
@@ -323,12 +344,17 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
         public String getTargetPath() {
             return targetPath;
         }
-        
+
 	    @Override
-        public void perform(Rdiff rdiff, FileSyncSlave syncTarget, CopyReporter reporter) throws IOException {
+        public void prepare(FileSyncParty syncSource, CopyReporter reporter) {
+            // do nothing
+        }
+
+        @Override
+        public void perform(FileSyncParty syncSource, FileSyncParty syncTarget, CopyReporter reporter) throws IOException {
 	        if (isDir) {
 	            syncTarget.eraseDirectory(targetPath);
-	            reporter.report("", targetPath + "/", "<prune>");
+	            reporter.report("", targetPath, "<prune>");
 	        }
 	        else {
 	            syncTarget.eraseFile(targetPath);
@@ -337,14 +363,15 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
         }
 	}
 	
-	private static class CopyAction implements CopyOptions, Action {
+	private static class CopyAction implements CopyOptions, Action, Serializable {
 		
-		private File source;
-		private String sourcePath;
+        private static final long serialVersionUID = 20140427L;
+        
+        private String sourcePath;
 		private String targetPath;
+		private List<ChecksumPair> digest;
 		
-		public CopyAction(String path, File source) {
-			this.source = source;
+		public CopyAction(String path) {
 			this.sourcePath = path;
 			this.targetPath = path;			
 			if (targetPath.startsWith("/")) {
@@ -363,41 +390,49 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 		}
 		
 		@Override
-		public void perform(Rdiff rdiff, FileSyncSlave syncTarget, CopyReporter reporter) throws IOException {
+		public void prepare(FileSyncParty syncSource, CopyReporter reporter) {
+		    if (!sourcePath.endsWith("/")) {
+		        try {
+                    this.digest = syncSource.readChecksums(sourcePath);
+                } catch (IOException e) {
+                    reporter.report(sourcePath, "", "ERROR: " + e);
+                }
+		    }
+		}
+		
+		@Override
+		public void perform(FileSyncParty syncSource, FileSyncParty syncTarget, CopyReporter reporter) throws IOException {
 			try {
-				if (source.isDirectory()) {
+				if (sourcePath.endsWith("/")) {
 			        reporter.report(sourcePath, targetPath, "<dir>");
 				}
 				else {
 				    List<ChecksumPair> digest = syncTarget.readChecksums(targetPath);
-				    FileInputStream fis = new FileInputStream(source);
 				    if (digest.isEmpty()) {
-    					OutputStream os = syncTarget.openFile(targetPath);
-    					StreamHelper.copy(fis, os);
+    					OutputStream os = syncTarget.openFileForWrite(targetPath);
+    					syncSource.streamFile(sourcePath, os);
     					os.close();
     					reporter.report(sourcePath, targetPath, "<copy>");
 				    }
 				    else {
-				        List<Delta> deltas = produceDeltas(rdiff, digest, fis);
-				        long dataSize = dataSize(deltas);
-				        long fileSize = source.length();
-				        boolean trim = isOffsetOnly(deltas);
-				        boolean match = isFullMatch(deltas, fileSize);
-				        if (!match) {
-				            // touch file only if it is different
-				            syncTarget.patchFile(targetPath, deltas);
-				        }
-				        if (match) {
+				        if (this.digest.equals(digest)) {
+				            // files are identical
 				            reporter.report(sourcePath, targetPath, String.format("<match>"));
 				        }
-				        else if (trim) {
-				            reporter.report(sourcePath, targetPath, String.format("<shuffle>"));
-				        }
 				        else {
-				            reporter.report(sourcePath, targetPath, String.format("<rewrite %02.0f%%>", 100f * dataSize / fileSize));
+    				        List<Delta> deltas = syncSource.preparePatch(sourcePath, digest);
+    				        long dataSize = dataSize(deltas);
+    				        long fileSize = fileLength(this.digest);
+    				        boolean trim = isOffsetOnly(deltas);
+    				        syncTarget.applyPatch(targetPath, deltas);
+    				        if (trim) {
+    				            reporter.report(sourcePath, targetPath, String.format("<shuffle>"));
+    				        }
+    				        else {
+    				            reporter.report(sourcePath, targetPath, String.format("<rewrite %02.0f%%>", 100f * dataSize / fileSize));
+    				        }
 				        }
 				    }
-				    fis.close();
 				}
 			} catch (RuntimeException e) {
 				reporter.report(sourcePath, targetPath, "Error: " + e.toString());
@@ -416,30 +451,7 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
             }
             return true;
         }
-
-        private boolean isFullMatch(List<Delta> deltas, long fileSize) {
-            long bump = 0;
-            for(Delta delta: deltas) {
-                if (delta instanceof Offsets) {
-                    Offsets offs = (Offsets) delta;
-                    if (offs.getOldOffset() == offs.getNewOffset() && offs.getNewOffset() == bump) {
-                        bump += offs.getBlockLength();
-                        continue;
-                    }                    
-                }
-                return false;
-            }
-            return fileSize == bump;
-        }
         
-        private List<Delta> produceDeltas(Rdiff rdiff, List<ChecksumPair> digest, FileInputStream fis) throws IOException {
-            try {
-                return rdiff.makeDeltas(digest, fis);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
 		private long dataSize(List<Delta> deltas) {
 		    long total = 0;
 		    for(Delta d: deltas) {
@@ -459,6 +471,16 @@ class SimpleFileSyncProcessor implements BatchCopyProcessor {
 				targetPath = sourcePath.substring(0, sourcePath.lastIndexOf('/') + 1) + newName;
 			}
 			return this;
-		}
+		}        
 	}	
+	
+	static long fileLength(List<ChecksumPair> digest) {
+	    if (digest.isEmpty()) {
+	        return 0;
+	    }
+	    else {
+	        ChecksumPair pair = digest.get(digest.size() - 1);
+	        return pair.getOffset() + pair.getLength();
+	    }
+	}
 }

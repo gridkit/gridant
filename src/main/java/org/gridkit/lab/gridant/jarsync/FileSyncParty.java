@@ -12,7 +12,7 @@ import org.gridkit.lab.gridant.jarsync.jarsync.Delta;
  * @author Alexey Ragozin (alexey.ragozin@gmail.com)
  *
  */
-public interface FileSyncSlave {
+public interface FileSyncParty {
 
     public String resolvePath(String path);
     
@@ -24,9 +24,13 @@ public interface FileSyncSlave {
     
     public boolean makePath(String path) throws IOException;
     
-    public OutputStream openFile(String path) throws IOException;
+    public OutputStream openFileForWrite(String path) throws IOException;
+
+    public void streamFile(String path, OutputStream sink) throws IOException;
     
-    public void patchFile(String path, List<Delta> deltas) throws IOException;
+    public List<Delta> preparePatch(String path, List<ChecksumPair> digest) throws IOException;
+
+    public void applyPatch(String path, List<Delta> deltas) throws IOException;
     
     public void eraseFile(String path) throws IOException;
 

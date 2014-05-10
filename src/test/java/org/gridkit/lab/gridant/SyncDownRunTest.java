@@ -31,6 +31,14 @@ public class SyncDownRunTest {
 	    runLocalTarget("simple-sync3");
 	}
 
+	@Test(timeout = 15000) // should breach timeout in case if async logging would break
+	public void run_sync_long() throws MalformedURLException, LaunchException {
+	    deleteAll(new File("target/sync-test"));
+	    runLocalTarget("simple-sync-long");
+	    System.setProperty("gridkit.zerormi.debug.rpc-delay", "500");
+	    runLocalTarget("simple-sync-long");
+	}
+
 	@Test
 	public void run_remote_sync() throws MalformedURLException, LaunchException {
 	    assumeHost("cbox1");

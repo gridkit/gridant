@@ -9,6 +9,7 @@ import java.lang.reflect.Proxy;
 import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -16,11 +17,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.gridkit.util.concurrent.FutureBox;
+
 class RemoteExporter {
 	
 	public static <T> T exportOneWay(T instance, Class<T> facade, Class<?>... otherFacades) {
-		Class<?>[] ifs = new Class[otherFacades.length + 1];
+		Class<?>[] ifs = new Class[otherFacades.length + 2];
 		ifs[0] = facade;
+		ifs[ifs.length - 1] = OneWayProxySync.class;
 		System.arraycopy(otherFacades, 0, ifs, 1, otherFacades.length);
 		return facade.cast(exportOneWay(instance, Arrays.asList(ifs)));
 	}
@@ -29,6 +33,15 @@ class RemoteExporter {
 		OneWayHandler h = new OneWayHandler(instance);
 		OneWayRedirector r = new OneWayRedirector(h);
 		return Proxy.newProxyInstance(facades.get(0).getClassLoader(), facades.toArray(new Class<?>[0]), r);
+	}
+	
+	public static void syncOneWayProxy(Object instance) {
+	    if (instance instanceof OneWayProxySync) {
+	        ((OneWayProxySync) instance).sync(null);
+	    }
+	    else {
+	        throw new IllegalArgumentException("Not a one way proxy");
+	    }
 	}
 		
 	public interface OneWayRemoteInvocationHandler extends Remote {
@@ -93,9 +106,15 @@ class RemoteExporter {
                     CallPackage pack = queue.poll(1000, TimeUnit.MILLISECONDS);
                     if (pack != null) {
                         batch.add(pack);
-                        queue.drainTo(batch);                    
+                        queue.drainTo(batch);
+                        List<FutureBox<Object>> syncs = extractSyncs(batch);
                         handler.invoke(batch);
                         batch.clear();
+                        if (syncs != null) {
+                            for(FutureBox<Object> sync: syncs) {
+                                sync.setData(null);
+                            }
+                        }
                     }
                     else {
                         if (proxy.get() == null && queue.isEmpty()) {
@@ -106,6 +125,22 @@ class RemoteExporter {
             } catch (InterruptedException e) {
                 // breaking out
             }
+        }
+
+        private List<FutureBox<Object>> extractSyncs(List<CallPackage> batch) {
+            List<FutureBox<Object>> result = null;
+            Iterator<CallPackage> it = batch.iterator();
+            while(it.hasNext()) {
+                CallPackage p = it.next();
+                if (p.sync != null) {
+                    if (result == null) {
+                        result = new ArrayList<FutureBox<Object>>();
+                    }
+                    result.add(p.sync);
+                    it.remove();
+                }
+            }
+            return result;
         }
 	}
 	
@@ -129,19 +164,29 @@ class RemoteExporter {
 					throw e.getCause();
 				}
 			}
+			else if (method.getDeclaringClass() == OneWayProxySync.class) {
+			    FutureBox<Object> box = new FutureBox<Object>();
+			    schedule(new CallPackage(box));
+			    box.get();
+			    return null;
+			}
 			else {
 				MethodInfo mi = new MethodInfo(method);
 				CallPackage pack = new CallPackage(mi, args);
-				synchronized(this) {
-					if (thread == null) {
-					    thread = new CallThread(handler, this);
-					    thread.start();
-					}
-					thread.queue.put(pack);
-				}
+				schedule(pack);
 				return null;
 			}
 		}
+
+        private void schedule(CallPackage pack) throws InterruptedException {
+            synchronized(this) {
+            	if (thread == null) {
+            	    thread = new CallThread(handler, this);
+            	    thread.start();
+            	}
+            	thread.queue.put(pack);
+            }
+        }
 	}
 	
 	@SuppressWarnings("serial")
@@ -211,10 +256,23 @@ class RemoteExporter {
         
         MethodInfo method;
 	    Object[] arguments;
+	    FutureBox<Object> sync;
         
 	    public CallPackage(MethodInfo method, Object[] arguments) {
             this.method = method;
             this.arguments = arguments;
+            this.sync = null;
         }
+
+	    public CallPackage(FutureBox<Object> sync) {
+	        this.method = null;
+	        this.arguments = null;
+	        this.sync = sync;
+	    }
+	}
+	
+	public interface OneWayProxySync {
+	    
+	    public void sync(OneWayProxySync signatureGuard);
 	}
 }

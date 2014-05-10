@@ -14,10 +14,10 @@ class RemoteBuildLogger implements BuildLogger, Serializable {
 	
 	private static final long serialVersionUID = 20130715L;
 	
-	private RemoteLogger logger;
+	private AntLogger logger;
 	
 	public RemoteBuildLogger(BuildLogger logger, Project proj) {
-		this.logger = RemoteExporter.exportOneWay(new ProxyWrapper(logger, proj), RemoteLogger.class);
+		this.logger = RemoteExporter.exportOneWay(new ProxyWrapper(logger, proj), AntLogger.class);
 	}
 	
 	public void buildStarted(BuildEvent event) {
@@ -37,16 +37,16 @@ class RemoteBuildLogger implements BuildLogger, Serializable {
 
 	public void targetFinished(BuildEvent event) {
 		logger.targetFinished(new RemoteBuildEvent(event));
+		RemoteExporter.syncOneWayProxy(logger);
 	}
-
 
 	public void taskStarted(BuildEvent event) {
 		logger.taskStarted(new RemoteBuildEvent(event));
 	}
 
-
 	public void taskFinished(BuildEvent event) {
 		logger.taskFinished(new RemoteBuildEvent(event));
+		RemoteExporter.syncOneWayProxy(logger);
 	}
 
 
@@ -75,21 +75,25 @@ class RemoteBuildLogger implements BuildLogger, Serializable {
 		throw new UnsupportedOperationException();
 	}
 	
-	static interface RemoteLogger extends Remote {
-		
-		public void buildStarted(RemoteBuildEvent event);
-		
-		public void buildFinished(RemoteBuildEvent event);
-		
-		public void targetStarted(RemoteBuildEvent event);
-		
-		public void targetFinished(RemoteBuildEvent event);
-		
-		public void taskStarted(RemoteBuildEvent event);
+	static interface AntLogger {
+	    
+	    public void buildStarted(RemoteBuildEvent event);
+	    
+	    public void buildFinished(RemoteBuildEvent event);
+	    
+	    public void targetStarted(RemoteBuildEvent event);
+	    
+	    public void targetFinished(RemoteBuildEvent event);
+	    
+	    public void taskStarted(RemoteBuildEvent event);
+	    
+	    public void taskFinished(RemoteBuildEvent event);
+	    
+	    public void messageLogged(RemoteBuildEvent event);		
+	}
 
-		public void taskFinished(RemoteBuildEvent event);
+	static interface RemoteLogger extends Remote, AntLogger {
 		
-		public void messageLogged(RemoteBuildEvent event);		
 	}
 	
 	private static class ProxyWrapper implements RemoteLogger {

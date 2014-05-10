@@ -11,11 +11,18 @@
 
 	<target name="local-base2">
 		<cluster type="local">
-			<basepath>target/sync-base1</basepath>
+			<basepath>target/sync-test/base2</basepath>
 			<server id="server2"/>
 		</cluster>
 	</target>
-	
+
+    <target name="in-proc-base">
+        <cluster type="in-process">
+            <basepath>target/sync-test/base-isolate</basepath>
+            <server id="server2"/>
+        </cluster>
+    </target>
+
     <target name="simple-sync" depends="local-base1">
         <echo>This is master</echo>
         <remotely servers="server*">
@@ -48,6 +55,16 @@
         		<copy rename="b.txt">**/b.txt.v2</copy>        		
         		<copy/>
         	</syncdown>
+        </remotely>
+    </target>
+	
+    <target name="simple-sync-long" depends="in-proc-base">
+        <echo>This is master</echo>
+        <remotely servers="server*">
+            <echo>This is slave ${slave.id}</echo>
+            <syncdown sourceBase="long-sync-list">
+                <copy/>
+            </syncdown>
         </remotely>
     </target>
 	

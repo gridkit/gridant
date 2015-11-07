@@ -43,7 +43,7 @@
     <dependency>
       <groupId>org.gridkit.lab</groupId>
       <artifactId>telecontrol-ssh</artifactId>
-      <version>0.8.2.2</version>
+      <version>0.8.9</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>

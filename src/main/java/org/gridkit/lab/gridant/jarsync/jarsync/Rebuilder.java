@@ -141,6 +141,8 @@ class Rebuilder {
                 } while (total < darray[i].getBlockLength());
             }
         }
+        
+        f.close();
     }
 
     /**
@@ -190,6 +192,7 @@ class Rebuilder {
                 out.write(((DataBlock) o).getData());
             } else if (o instanceof Offsets) {
                 if (in == null) {
+                    out.close();
                     throw new IOException("original file does not exist or not readable");
                 }
                 int len = ((Offsets) o).getBlockLength();
@@ -203,8 +206,9 @@ class Rebuilder {
             }
         }
 
-        if (in != null)
+        if (in != null) {
             in.close();
+        }
         out.close();
     }
 
@@ -227,8 +231,10 @@ class Rebuilder {
 
         for (Delta o : deltas) {
             if (o instanceof Offsets) {
-                if (copyOnly)
+                if (copyOnly) {
+                    f.close();
                     throw new IOException("original file does not exist.");
+                }
                 offsets.add((Offsets) o);
                 digraph.put((Offsets) o, new HashSet<Offsets>());
                 newFileLength = Math.max(newFileLength, ((Offsets) o).getNewOffset() + ((Offsets) o).getBlockLength());

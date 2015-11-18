@@ -20,7 +20,8 @@ import java.util.List;
  */
 class StreamHelper {
 	
-	public static byte[] readFile(File file) {
+	@SuppressWarnings("resource")
+    public static byte[] readFile(File file) {
 		try {
 			if (file.length() > 1 << 30) {
 				throw new ArrayIndexOutOfBoundsException("File is too big");

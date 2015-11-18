@@ -441,6 +441,7 @@ public class Rdiff {
         throw new IOException("Didn't recieve RS_OP_END.");
     }
 
+    @SuppressWarnings("resource")
     public void rebuildFile(File basis, InputStream deltas, OutputStream out) throws IOException {
         File temp = File.createTempFile(".rdiff", null);
         try {

@@ -55,7 +55,8 @@ public class RdiffTest
       }
   }
 
-  private void checkSame(File a, File b) throws IOException
+  @SuppressWarnings("resource")
+private void checkSame(File a, File b) throws IOException
   {
     FileInputStream as = new FileInputStream(a);
     FileInputStream bs = new FileInputStream(b);
